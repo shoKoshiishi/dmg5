@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MH Wilds Total Damage Calculator (Detailed)</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <style>
+        body { font-family: sans-serif; margin: 0; padding: 20px; line-height: 1.5; background-color: #f4f4f4;}
+        .container { max-width: 960px; margin: 0 auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);} /* コンテンツを中央寄せ */
+        label { display: inline-block; width: 280px; margin-bottom: 5px; font-weight: bold; }
+        input[type="number"], input[type="text"], select {
+             width: 150px; /* デフォルト幅を調整 */
+             padding: 8px;
+             border: 1px solid #ccc;
+             border-radius: 4px;
+             margin-bottom: 10px;
+             box-sizing: border-box; /* paddingとborderを幅に含める */
+        }
+         input[type="number"] { width: 80px; margin-right: 10px; } /* 数値入力の幅を調整 */
+         /* セレクトボックスの幅調整 */
+        select {
+            width: 100px; /* 適切な幅に調整 */
+             margin-right: 10px;
+             vertical-align: top; /* ラベルとの位置調整 */
+        }
+         select#monsterSelect { width: 150px; } /* モンスター選択セレクトボックスの幅を調整 */
+
+
+        input[type="checkbox"] { margin-bottom: 5px; transform: scale(1.2); margin-right: 5px; vertical-align: middle; }
+
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 15px;
+            margin-right: 10px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover { background-color: #45a049; }
+        button.save-button { background-color: #007bff; }
+        button.save-button:hover { background-color: #0056b3; }
+         button.load-button { background-color: #ffc107; color: #212529;}
+         button.load-button:hover { background-color: #e0a800; }
+         button.delete-button { background-color: #dc3545; }
+         button.delete-button:hover { background-color: #c82333; }
+         button.secondary-button { background-color: #6c757d; margin-top: 0; } /* モーダル内のボタン用 */
+         button.secondary-button:hover { background-color: #5a6268; }
+
+
+        .section-title { margin-top: 20px; margin-bottom: 10px; font-weight: bold; border-bottom: 2px solid #eee; padding-bottom: 5px; font-size: 1.2em;}
+        #results { margin-top: 30px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: #f9f9f9; }
+        #results h3 { margin-top: 0; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        #results p { margin-bottom: 5px; }
+         /* テーブル用のスタイル */
+         #results table {
+             width: 100%;
+             border-collapse: collapse; /* セルの境界線を重ねる */
+             margin-bottom: 15px;
+         }
+         #results th, #results td {
+             border: 1px solid #ddd; /* 枠線 */
+             padding: 8px;
+             text-align: left; /* テキスト左寄せ */
+         }
+         #results th {
+             background-color: #f2f2f2; /* ヘッダー背景色 */
+             font-weight: bold;
+         }
+         #results tbody tr:nth-child(even) {
+             background-color: #f9f9f9; /* 偶数行の背景色 */
+         }
+
+
+        .attack-list { margin-bottom: 15px; }
+        .attack-list label { width: auto; margin-right: 15px; margin-bottom: 8px; font-weight: normal; text-align: left; } /* モーション名のラベル幅を自動に */
+        .attack-group-title { font-weight: bold; margin-top: 10px; margin-bottom: 5px; border-bottom: 1px dotted #ccc; padding-bottom: 2px;}
+
+         .skill-category-title { font-weight: bold; margin-top: 15px; margin-bottom: 8px; border-bottom: 1px solid #ddd; padding-bottom: 3px; }
+        .skill-item { margin-bottom: 8px; display: flex; align-items: center;} /* 各スキル項目をflexboxで横並びに */
+        .skill-item label { width: 180px; font-weight: normal; margin-bottom: 0; text-align: left; } /* スキル名ラベルの幅固定 */
+         .skill-item select { margin-left: auto; flex-shrink: 0; } /* レベル選択ドロップダウン */
+         .skill-item input[type="checkbox"] { flex-shrink: 0; }
+
+        /* --- Modal Styles --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-overlay.visible {
+            display: flex;
+        }
+
+        .modal-dialog {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            width: 90%; /* スマホ考慮して幅を%に */
+            max-width: 500px; /* PCでの最大幅 */
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .modal-dialog h3 {
+             margin-top: 0;
+             margin-bottom: 15px;
+             border-bottom: 1px solid #eee;
+             padding-bottom: 8px;
+        }
+
+         .modal-dialog .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 1.5em;
+            border: none;
+            background: none;
+            cursor: pointer;
+            padding: 5px;
+            margin: 0;
+         }
+         .modal-dialog .close-button:hover {
+            color: #dc3545;
+         }
+
+        .modal-dialog .control-group {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px dotted #ccc;
+        }
+         .modal-dialog .control-group:last-child {
+             border-bottom: none;
+             padding-bottom: 0;
+         }
+
+        .modal-dialog .control-group label {
+            width: auto; /* モーダル内のラベル幅自動 */
+            margin-right: 10px;
+            font-weight: normal;
+        }
+         .modal-dialog .control-group input[type="text"],
+         .modal-dialog .control-group select {
+             width: auto; /* モーダル内の入力/選択幅自動 */
+             flex-grow: 1; /* 必要に応じて幅を広げる */
+         }
+         .modal-dialog .control-group div {
+             display: flex;
+             align-items: center;
+             margin-bottom: 8px;
+         }
+         .modal-dialog .control-group div:last-child {
+             margin-bottom: 0;
+         }
+
+
+        /* --- Responsive Styles --- */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+             .container { padding: 15px; }
+
+            label {
+                width: 100%; /* 狭い画面ではラベルを100%幅に */
+                margin-bottom: 5px;
+            }
+            input[type="number"], input[type="text"], select {
+                 width: 100%; /* 入力フィールドも100%幅に */
+                 margin-right: 0;
+                 margin-bottom: 10px;
+            }
+             input[type="number"] { width: 100%; } /* 個別指定も100%に */
+             /* セレクトボックスも100%に */
+             select {
+                 width: 100%;
+                 margin-right: 0;
+             }
+             select#monsterSelect { width: 100%; }
+
+
+            button {
+                 width: 100%; /* ボタンも100%幅に */
+                 margin-right: 0;
+                 margin-bottom: 10px;
+            }
+             button:last-child { margin-bottom: 0; } /* 最後のボタンの下余白調整 */
+             button.secondary-button { margin-bottom: 10px; }
+
+            .skill-item {
+                flex-direction: column; /* スキル項目を縦並びに */
+                align-items: flex-start; /* 左寄せ */
+            }
+             .skill-item label { width: 100%; margin-bottom: 5px; } /* ラベルも100%幅 */
+             .skill-item select { margin-left: 0; width: 100%; } /* ドロップダウンも100%幅 */
+             .skill-item input[type="checkbox"] { flex-shrink: 0; }
+
+
+             .modal-dialog {
+                width: 95%; /* さらに狭く */
+                padding: 15px;
+             }
+             .modal-dialog .control-group div {
+                 flex-direction: column; /* モーダル内の要素も縦積みに */
+                 align-items: flex-start;
+             }
+              .modal-dialog .control-group label { width: 100%; margin-bottom: 5px;}
+              .modal-dialog .control-group input[type="text"],
+              .modal-dialog .control-group select { width: 100%; margin-right: 0; margin-bottom: 8px;}
+         }
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <h2>MH Wilds 太刀 合計ダメージ計算ツール (詳細版)</h2>
+        <p>選択した攻撃モーションの連携による合計ダメージを計算します。</p>
+        <p>入力項目とスキルレベルを調整し、連携に含めたい攻撃にチェックを入れて「合計ダメージを計算」ボタンを押してください。</p>
+        <p>※モーション値・スキル効果・斬れ味補正値・モンスター肉質はコミュニティの検証情報に基づき、製品版と異なる場合があります。</p>
+
+        <div class="section-title">武器基本性能</div>
+        <div><label for="baseRaw">武器基礎攻撃力:</label><input type="number" id="baseRaw" value="220"></div>
+        <div><label for="baseAffinity">武器基礎会心率 (%):</label><input type="number" id="baseAffinity" value="5"></div>
+        <div>
+             <label for="baseDisplayElem">武器表示属性値:</label>
+             <input type="number" id="baseDisplayElem" value="350">
+             <select id="weaponElement">
+                 <option value="fire">火</option>
+                 <option value="water">水</option>
+                 <option value="thunder">雷</option>
+                 <option value="ice" selected>氷</option>
+                 <option value="dragon">龍</option>
+             </select>
+         </div>
+        <div>
+             <label for="sharpnessColor">斬れ味:</label>
+             <select id="sharpnessColor">
+                 <option value="yellow">黄</option>
+                 <option value="green">緑</option>
+                 <option value="blue">青</option>
+                 <option value="white" selected>白</option>
+             </select>
+         </div>
+
+
+        <div class="section-title">モンスター選択と肉質情報</div>
+         <div>
+            <label for="monsterSelect">モンスター:</label>
+             <select id="monsterSelect">
+                 <option value="redaou" selected>レダウ</option>
+                 <option value="arshubeldo">アルシュベルド</option>
+             </select>
+         </div>
+        <p id="hitzoneNote">※肉質情報は選択されたモンスターに基づきツールに組み込まれています。<br>レダウ肉質は歴戦王、アルシュベルド肉質は調査クエストの情報を参考にしています。</p>
+
+
+        <div class="section-title">スキル設定</div>
+        <p>※チェックで有効/無効を切り替え、ドロップダウンでレベルを選択してください。</p>
+
+        <div class="skill-category-title">武器スキル</div>
+        <div class="skill-item">
+            <input type="checkbox" id="skillAttackToggle" data-skill-id="attack">
+            <label for="skillAttackToggle">攻撃</label>
+             <select id="skillAttackLevelSelect" data-skill-id="attack" disabled>
+                 <option value="0">Lv0</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3">Lv3</option><option value="4">Lv4</option><option value="5">Lv5</option><option value="6">Lv6</option><option value="7" selected>Lv7</option>
+             </select>
+        </div>
+        <div class="skill-item">
+            <input type="checkbox" id="skillCriticalEyeToggle" data-skill-id="criticalEye">
+            <label for="skillCriticalEyeToggle">見切り</label>
+             <select id="skillCriticalEyeLevelSelect" data-skill-id="criticalEye" disabled>
+                 <option value="0">Lv0</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3">Lv3</option><option value="4">Lv4</option><option value="5">Lv5</option><option value="6">Lv6</option><option value="7" selected>Lv7</option>
+             </select>
+        </div>
+        <div class="skill-item">
+            <input type="checkbox" id="skillCritBoostToggle" data-skill-id="critBoost">
+            <label for="skillCritBoostToggle">超会心</label>
+             <select id="skillCritBoostLevelSelect" data-skill-id="critBoost" disabled>
+                 <option value="0">Lv0</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3">Lv3</option><option value="4">Lv4</option><option value="5" selected>Lv5</option>
+             </select>
+        </div>
+        <div class="skill-item">
+            <input type="checkbox" id="skillMindsEyeToggle" data-skill-id="mindsEye">
+            <label for="skillMindsEyeToggle">心眼</label>
+             <select id="skillMindsEyeLevelSelect" data-skill-id="mindsEye" disabled>
+                 <option value="0">Lv0</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3" selected>Lv3</option>
+             </select>
+        </div>
+        <div class="skill-item">
+            <input type="checkbox" id="skillCritElemToggle" data-skill-id="critElem">
+            <label for="skillCritElemToggle">会心撃【属性】</label>
+             <select id="skillCritElemLevelSelect" data-skill-id="critElem" disabled>
+                 <option value="0">Lv0</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3">Lv3</option><option value="4">Lv4</option><option value="5" selected>Lv5</option>
+             </select>
+        </div>
+        <p>※武器固有のRaw/属性値スキルは入力項目に移動しました。</p>
+
+        <div class="skill-category-title">防具スキル</div>
+        <div class="skill-item">
+            <input type="checkbox" id="skillPeakPerformanceToggle" data-skill-id="peakPerformance">
+            <label for="skillPeakPerformanceToggle">フルチャージ</label>
+             <select id="skillPeakPerformanceLevelSelect" data-skill-id="peakPerformance" disabled>
+                 <option value="0">Lv0</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3">Lv3</option><option value="4">Lv4</option><option value="5" selected>Lv5</option>
+             </select>
+        </div>
+        <div class="skill-item">
+            <input type="checkbox" id="skillInverseToggle" data-skill-id="inverse">
+            <label for="skillInverseToggle">逆襲</label>
+             <select id="skillInverseLevelSelect" data-skill-id="inverse" disabled>
+                 <option value="0">Lv0</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3" selected>Lv3</option>
+             </select>
+        </div>
+         <div class="skill-item">
+            <input type="checkbox" id="skillAgitatorToggle" data-skill-id="agitator">
+            <label for="skillAgitatorToggle">挑戦者</label>
+             <select id="skillAgitatorLevelSelect" data-skill-id="agitator" disabled>
+                 <option value="0">Lv0</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3">Lv3</option><option value="4">Lv4</option><option value="5" selected>Lv5</option>
+             </select>
+        </div>
+         <div class="skill-item">
+            <input type="checkbox" id="skillMaximumMightToggle" data-skill-id="maximumMight">
+            <label for="skillMaximumMightToggle">渾身</label>
+             <select id="skillMaximumMightLevelSelect" data-skill-id="maximumMight" disabled>
+                 <option value="0">Lv0</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3" selected>Lv3</option>
+             </select>
+        </div>
+         <div class="skill-item">
+            <input type="checkbox" id="skillLatentPowerToggle" data-skill-id="latentPower">
+            <label for="skillLatentPowerToggle">力の解放</label>
+             <select id="skillLatentPowerLevelSelect" data-skill-id="latentPower" disabled>
+                 <option value="0">Lv0</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3">Lv3</option><option value="4">Lv4</option><option value="5" selected>Lv5</option>
+             </select>
+        </div>
+         <div class="skill-item">
+            <input type="checkbox" id="skillChainCritToggle" data-skill-id="chainCrit">
+            <label for="skillChainCritToggle">連撃</label>
+             <select id="skillChainCritLevelSelect" data-skill-id="chainCrit" disabled>
+                 <option value="0">Lv0</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3" selected>Lv3</option>
+             </select>
+        </div>
+         <div class="skill-item">
+            <input type="checkbox" id="skillOffensiveGuardToggle" data-skill-id="offensiveGuard">
+            <label for="skillOffensiveGuardToggle">巧撃</label>
+             <select id="skillOffensiveGuardLevelSelect" data-skill-id="offensiveGuard" disabled>
+                 <option value="0">Lv0</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3" selected>Lv3</option>
+             </select>
+        </div>
+         <div class="skill-item">
+            <input type="checkbox" id="skillAbsorptionToggle" data-skill-id="absorption">
+            <label for="skillAbsorptionToggle">属性吸収</label>
+             <select id="skillAbsorptionLevelSelect" data-skill-id="absorption" disabled>
+                 <option value="0">Lv0</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3" selected>Lv3</option>
+             </select>
+        </div>
+        <div class="skill-item">
+            <input type="checkbox" id="skillWeaknessExploitToggle" data-skill-id="weaknessExploit">
+            <label for="skillWeaknessExploitToggle">弱点特攻</label>
+             <select id="skillWeaknessExploitLevelSelect" data-skill-id="weaknessExploit" disabled>
+                 <option value="0">Lv0</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3">Lv3</option><option value="4">Lv4</option><option value="5" selected>Lv5</option>
+             </select>
+        </div>
+
+
+        <div class="skill-category-title">グループスキル (セットボーナス等)</div>
+        <div class="skill-item">
+             <input type="checkbox" id="skillNushiNoTamashiiToggle" data-skill-id="nushiNoTamashii">
+             <label for="skillNushiNoTamashiiToggle">ヌシの魂 Lv1 (根性【果敢】発動前)</label>
+             </div>
+
+
+        <div class="section-title">攻撃連携シミュレーション</div>
+        <p>連携に含めたい攻撃にチェックを入れてください。選択された攻撃の合計ダメージを計算します。<br>※多段ヒット攻撃は「1ヒットあたりのMV」と「合計ヒット数」を元に、攻撃全体の合計ダメージを計算します。</p>
+        <div class="attack-list">
+            <div class="attack-group-title">基本攻撃</div>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.24" data-hits="1" data-name="縦斬り"> 縦斬り (MV: 0.24)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.18" data-hits="1" data-name="縦斬り(2)"> 縦斬り(2) (MV: 0.18)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.32" data-hits="1" data-name="逆袈裟斬り"> 逆袈裟斬り (MV: 0.32)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.18" data-hits="1" data-name="突き"> 突き (MV: 0.18)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.18" data-hits="1" data-name="斬り上げ"> 斬り上げ (MV: 0.18)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.22" data-hits="1" data-name="斬り下がり"> 斬り下がり (MV: 0.22)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.22" data-hits="1" data-name="左右移動斬り"> 左右移動斬り (MV: 0.22)</label><br>
+             <label><input type="checkbox" class="attack-checkbox" data-mv="0.26" data-hits="1" data-name="気刃斬りI"> 気刃斬りI (MV: 0.26)</label><br>
+             <label><input type="checkbox" class="attack-checkbox" data-mv="0.30" data-hits="1" data-name="赤刃斬りI"> 赤刃斬りI (MV: 0.30)</label><br>
+
+             <div class="attack-group-title">気刃斬り連携</div>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.28" data-hits="1" data-name="気刃踏み込み斬り"> 気刃踏み込み斬り (MV: 0.28)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.14" data-hits="1" data-name="気刃斬りⅠ(ゲージ無し)"> 気刃斬りⅠ(ゲージ無し) (MV: 0.14)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.31" data-hits="1" data-name="気刃斬りⅠ"> 気刃斬りⅠ (MV: 0.31)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.30" data-hits="1" data-name="気刃斬りⅡ"> 気刃斬りⅡ (MV: 0.30)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.14" data-hits="1" data-name="気刃斬りⅡ(移動) ヒット1"> 気刃斬りⅡ(移動) ヒット1 (MV: 0.14)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.26" data-hits="1" data-name="気刃斬りⅡ(移動) ヒット2"> 気刃斬りⅡ(移動) ヒット2 (MV: 0.26)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.14" data-hits="1" data-name="気刃斬りⅢ ヒット1"> 気刃斬りⅢ ヒット1 (MV: 0.14)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.19" data-hits="1" data-name="気刃斬りⅢ ヒット2"> 気刃斬りⅢ ヒット2 (MV: 0.19)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.34" data-hits="1" data-name="気刃斬りⅢ ヒット3"> 気刃斬りⅢ ヒット3 (MV: 0.34)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.38" data-hits="1" data-name="気刃大回転斬り"> 気刃大回転斬り (MV: 0.38)</label><br>
+             <div class="attack-group-title">居合・見切り・赤刃</div>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.18" data-hits="1" data-name="居合抜刀斬り ヒット1"> 居合抜刀斬り ヒット1 (MV: 0.18)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.13" data-hits="1" data-name="居合抜刀斬り ヒット2"> 居合抜刀斬り ヒット2 (MV: 0.13)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.17" data-hits="1" data-name="居合抜刀気刃斬り (ゲージ無し?)"> 居合抜刀気刃斬り (MV: 0.17)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.19" data-hits="1" data-name="居合抜刀気刃斬り白"> 居合抜刀気刃斬り白 (MV: 0.19)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.31" data-hits="1" data-name="居合抜刀気刃斬り黄"> 居合抜刀気刃斬り黄 (MV: 0.31)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.39" data-hits="1" data-name="居合抜刀気刃斬り赤"> 居合抜刀気刃斬り赤 (MV: 0.39)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.11" data-hits="1" data-name="見切り斬り"> 見切り斬り (MV: 0.11)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.20" data-hits="1" data-name="見切り斬り・旋 ヒット1"> 見切り斬り・旋 ヒット1 (MV: 0.20)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.12" data-hits="1" data-name="見切り斬り・旋 ヒット2"> 見切り斬り・旋 ヒット2 (MV: 0.12)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.09" data-hits="1" data-name="赤刃斬りⅡ ヒット1"> 赤刃斬りⅡ ヒット1 (MV: 0.09)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.18" data-hits="1" data-name="赤刃斬りⅡ ヒット2"> 赤刃斬りⅡ ヒット2 (MV: 0.18)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.28" data-hits="1" data-name="赤刃斬りⅢ ヒット1"> 赤刃斬りⅢ ヒット1 (MV: 0.28)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.16" data-hits="1" data-name="赤刃斬りⅢ ヒット2"> 赤刃斬りⅢ ヒット2 (MV: 0.16)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.49" data-hits="1" data-name="赤刃斬りⅢ ヒット3"> 赤刃斬りⅢ ヒット3 (MV: 0.49)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.55" data-hits="1" data-name="赤刃旋転斬"> 赤刃旋転斬 (MV: 0.55)</label><br>
+
+
+            <div class="attack-group-title">特殊系</div>
+             <label><input type="checkbox" class="attack-checkbox" data-mv="0.05" data-hits="3" data-name="練気解放無双斬り MV5"> 練気解放無顔斬り MV5 (MV: 0.05 x 3ヒット)</label><br>
+             <label><input type="checkbox" class="attack-checkbox" data-mv="0.10" data-hits="3" data-name="練気解放無双斬り MV10"> 練気解放無顔斬り MV10 (MV: 0.10 x 3ヒット)</label><br>
+             <label><input type="checkbox" class="attack-checkbox" data-mv="0.16" data-hits="3" data-name="練気解放無双斬り MV16"> 練気解放無顔斬り MV16 (MV: 0.16 x 3ヒット)</label><br>
+             <label><input type="checkbox" class="attack-checkbox" data-mv="0.22" data-hits="3" data-name="練気解放無双斬り MV22"> 練気解放無顔斬り MV22 (MV: 0.22 x 3ヒット)</label><br>
+             <label><input type="checkbox" class="attack-checkbox" data-mv="0.36" data-hits="3" data-name="練気解放無双斬り MV36"> 練気解放無顔斬り MV36 (MV: 0.36 x 3ヒット)</label><br>
+
+             <label><input type="checkbox" class="attack-checkbox" data-mv="0.15" data-hits="7" data-name="気刃兜割 白"> 気刃兜割 白 (MV: 0.15 x 7ヒット)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.20" data-hits="7" data-name="気刃兜割 黄"> 気刃兜割 黄 (MV: 0.20 x 7ヒット)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.23" data-hits="7" data-name="気刃兜割 赤"> 気刃兜割 赤 (MV: 0.23 x 7ヒット)</label><br>
+
+             <label><input type="checkbox" class="attack-checkbox" data-mv="0.18" data-hits="1" data-name="気刃突き"> 気刃突き (MV: 0.18)</label><br>
+
+            <div class="attack-group-title">ジャンプ攻撃・騎乗</div>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.18" data-hits="1" data-name="ジャンプ斬り"> ジャンプ斬り (MV: 0.18)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.20" data-hits="1" data-name="ジャンプ斬り上げ"> ジャンプ斬り上げ (MV: 0.20)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.16" data-hits="1" data-name="ジャンプ気刃斬りⅠ(ゲージ無し)"> ジャンプ気刃斬りⅠ(ゲージ無し) (MV: 0.16)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.30" data-hits="1" data-name="ジャンプ気刃斬りⅠ"> ジャンプ気刃斬りⅠ (MV: 0.30)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.15" data-hits="1" data-name="騎乗攻撃1 ヒット1"> 騎乗攻撃1 ヒット1 (MV: 0.15)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.10" data-hits="1" data-name="騎乗攻撃1 ヒット2"> 騎乗攻撃1 ヒット2 (MV: 0.10)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.20" data-hits="1" data-name="騎乗攻撃2"> 騎乗攻撃2 (MV: 0.20)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.30" data-hits="1" data-name="下乗攻撃 ヒット1"> 下乗攻撃 ヒット1 (MV: 0.30)</label><br>
+            <label><input type="checkbox" class="attack-checkbox" data-mv="0.15" data-hits="1" data-name="下乗攻撃 ヒット2"> 下乗攻撃 ヒット2 (MV: 0.15)</label><br>
+
+
+        </div>
+
+
+        <div class="section-title">シミュレーション設定</div>
+
+        <button class="secondary-button" onclick="openSettingsModal()">設定の保存・読み込み・削除</button>
+
+
+        <button onclick="calculateTotalDamage()">合計ダメージを計算</button>
+
+        <div id="results"></div>
+
+    </div> <div id="settingsModalOverlay" class="modal-overlay">
+        <div id="settingsModalDialog" class="modal-dialog">
+            <button class="close-button" onclick="closeSettingsModal()">&times;</button>
+            <h3>設定の保存・読み込み・削除</h3>
+
+            <div class="control-group">
+                <div>
+                    <label for="settingNameInput">設定名:</label>
+                    <input type="text" id="settingNameInput" placeholder="新しい設定名">
+                </div>
+                <button class="save-button secondary-button" onclick="saveCurrentSettings()">現在の設定を保存</button>
+            </div>
+
+            <div class="control-group">
+                 <div>
+                    <label for="savedSettingsSelect">保存済み設定:</label>
+                    <select id="savedSettingsSelect">
+                        <option value="">--選択してください--</option>
+                    </select>
+                 </div>
+                <button class="load-button secondary-button" onclick="loadSelectedSetting()">読み込み</button>
+                <button class="delete-button secondary-button" onclick="deleteSelectedSetting()">削除</button>
+            </div>
+
+            <div class="control-group">
+                 <button class="clear-button secondary-button" onclick="clearAllSettings()">全ての保存設定をクリア</button>
+            </div>
+
+        </div>
+    </div>
+    <script>
+        // Define a key for localStorage
+        const localStorageKey = 'mhwilds_ls_calculator_multiple_settings_v15'; // キーを更新
+
+        // Global variable to hold all settings
+        let allSettings = {};
+
+        // --- Skill Data Mapping (Level Effects) ---
+        const skillData = {
+            attack: { raw: [0, 3, 5, 7, 8, 8, 8, 8], multi: [1.0, 1.0, 1.0, 1.0, 1.02, 1.04, 1.06, 1.08] }, // Lv0-7
+            criticalEye: { affinity: [0, 4, 8, 12, 16, 20, 25, 30] }, // Lv0-7
+            peakPerformance: { raw: [0, 3, 6, 10, 15, 20] }, // Lv0-5
+            inverse: { raw: [0, 10, 15, 25] }, // Lv0-3
+            agitator: { raw: [0, 4, 8, 12, 16, 20], affinity: [0, 3, 5, 7, 10, 15] }, // Lv0-5
+            maximumMight: { affinity: [0, 10, 20, 30] }, // Lv0-3
+            latentPower: { affinity: [0, 10, 20, 30, 40, 50] }, // Lv0-5
+            chainCrit: { raw: [0, 8, 12, 16], trueElem: [0, 6, 8, 10] }, // Lv0-3 (Stage 2 assumed)
+            offensiveGuard: { raw: [0, 10, 15, 20] }, // Lv0-3
+            absorption: { trueElem: [0, 4, 6, 8] }, // Lv0-3 (Assumed)
+            weaknessExploit: { totalWoundedAff: [0, 8, 15, 25, 35, 50] }, // Lv0-5 (Effective + Wounded combined)
+            critBoost: { totalMulti: [1.25, 1.28, 1.31, 1.34, 1.37, 1.40] }, // Lv0-5 (Base 1.25 + skill adds. Lv0 is 1.25)
+            mindsEye: { hardMulti: [1.0, 1.10, 1.15, 1.30] }, // Lv0-3 (Lv0 is 1.0)
+            critElem: { multi: [1.0, 1.05, 1.09, 1.16, 1.20, 1.25] }, // Lv0-5 (Lv0 is 1.0)
+            nushiNoTamashii: { rawMultiplier: 1.05 } // Lv1 fixed multiplier
+        };
+
+        // --- Sharpness Multipliers Data ---
+        const sharpnessData = {
+            yellow: { phys: 1.00, elem: 0.75 },
+            green: { phys: 1.05, elem: 1.00 },
+            blue: { phys: 1.20, elem: 1.0625 }, // Community value, might change
+            white: { phys: 1.32, elem: 1.15 },
+        };
+
+        // --- Weapon Element Data ---
+        const weaponElementNames = {
+            fire: '火',
+            water: '水',
+            thunder: '雷',
+            ice: '氷',
+            dragon: '龍'
+        };
+
+         // --- Monster Hitzone Data ---
+         // Note: Physical hitzones are for '斬' (cutting) damage for Taijutsu.
+         const monsterHitzoneData = {
+             redaou: {
+                 name: '歴戦王レダウ',
+                 hitzones: {
+                    head_normal: { name: '頭 (通常)', raw: 60, elem: { fire: 5, water: 15, thunder: 0, ice: 20, dragon: 5 } },
+                    head_wound:  { name: '頭 (傷口)', raw: 70, elem: { fire: 5, water: 20, thunder: 0, ice: 25, dragon: 5 } },
+                    head_weak:   { name: '頭[弱点]',   raw: 80, elem: { fire: 5, water: 20, thunder: 0, ice: 25, dragon: 5 } },
+                    body:        { name: '胴体',      raw: 30, elem: { fire: 5, water: 5,  thunder: 0, ice: 5,  dragon: 5 } },
+                    wing:        { name: '翼',        raw: 45, elem: { fire: 5, water: 10, thunder: 0, ice: 15, dragon: 5 } },
+                    leg:         { name: '脚',        raw: 37, elem: { fire: 5, water: 5,  thunder: 0, ice: 5,  dragon: 5 } },
+                    tail:        { name: '尻尾',      raw: 45, elem: { fire: 5, water: 5,  thunder: 0, ice: 10, dragon: 5 } },
+                    tail_wound:  { name: '尻尾（その他傷口）', raw: 65, elem: { fire: 5, water: 10, thunder: 0, ice: 15, dragon: 5 } },
+                 }
+             },
+             arshubeldo: {
+                 name: 'アルシュベルド',
+                 hitzones: {
+                    head_wound:    { name: '頭（傷口）',   raw: 45, elem: { fire: 5, water: 5,  thunder: 5, ice: 5,  dragon: 5 } },
+                    body:          { name: '胴体',        raw: 28, elem: { fire: 1, water: 1,  thunder: 1, ice: 1,  dragon: 5 } },
+                    wing:          { name: '翼',          raw: 42, elem: { fire: 2, water: 2,  thunder: 2, ice: 2,  dragon: 4 } },
+                    jawleg_wound:  { name: '顎脚（傷口）',   raw: 50, elem: { fire: 0, water: 0,  thunder: 0, ice: 0,  dragon: 0 } },
+                    jawleg_other:  { name: '顎脚（その他傷口）', raw: 70, elem: { fire: 30, water: 30, thunder: 30, ice: 30, dragon: 38 } },
+                    jawleg_weak:   { name: '顎脚[弱点]',     raw: 52, elem: { fire: 20, water: 20, thunder: 20, ice: 20, dragon: 25 } },
+                    leg:           { name: '脚',          raw: 26, elem: { fire: 2, water: 2,  thunder: 2, ice: 2,  dragon: 4 } },
+                    tail:          { name: '尻尾',        raw: 45, elem: { fire: 5, water: 5,  thunder: 5, ice: 5,  dragon: 5 } },
+                    tail_wound:    { name: '尻尾（その他傷口）', raw: 60, elem: { fire: 5, water: 5,  thunder: 10, ice: 5,  dragon: 15 } },
+                 }
+             }
+         };
+         const MINDS_EYE_THRESHOLD = 44; // Physical hitzone <= 44
+         const WEX_THRESHOLD = 45; // Physical hitzone >= 45 for WEX
+
+
+        // Get results div element once on load
+        let resultsDivElement;
+
+        // Helper to safely parse float from element value
+        const safeParseFloat = (id, defaultValue = 0) => {
+            const element = document.getElementById(id);
+            if (!element) { return defaultValue; }
+            const value = parseFloat(element.value);
+            return isNaN(value) ? defaultValue : value;
+        };
+
+        // Helper to safely parse int from element value
+        const safeParseInt = (id, defaultValue = 0) => {
+             const element = document.getElementById(id);
+            if (!element) { return defaultValue; }
+            const value = parseInt(element.value);
+            return isNaN(value) ? defaultValue : value;
+        };
+
+        // Helper to safely get checkbox checked state
+        const safeGetChecked = (id, defaultValue = false) => {
+             const element = document.getElementById(id);
+             if (!element || element.type !== 'checkbox') { return defaultValue; }
+             return element.checked;
+        };
+
+        // Helper to safely get select element value
+        const safeGetSelectValue = (id, defaultValue = '') => {
+            const element = document.getElementById(id);
+            if (!element || element.tagName !== 'SELECT') { return defaultValue; }
+            return element.value;
+        };
+
+
+        // --- Helper Functions for Getting Input Values ---
+        function getWeaponInputs() {
+            const selectedSharpnessColor = safeGetSelectValue('sharpnessColor', 'white');
+            const selectedWeaponElement = safeGetSelectValue('weaponElement', 'ice');
+
+            const inputs = {
+                baseRaw: safeParseFloat('baseRaw', 0),
+                baseAffinity: safeParseFloat('baseAffinity', 0),
+                baseDisplayElem: safeParseFloat('baseDisplayElem', 0),
+                weaponElement: selectedWeaponElement,
+                sharpnessColor: selectedSharpnessColor,
+                sharpnessPhys: sharpnessData[selectedSharpnessColor]?.phys ?? 1.0,
+                sharpnessElem: sharpnessData[selectedSharpnessColor]?.elem ?? 1.0,
+            };
+            return inputs;
+        }
+
+        function getSkillSettings() {
+             const skillSettings = {};
+             const skillToggles = document.querySelectorAll('.skill-item input[type="checkbox"][data-skill-id]');
+
+             skillToggles.forEach(checkbox => {
+                 const skillId = checkbox.dataset.skillId;
+                 if (skillId) {
+                     const levelSelect = document.getElementById(skillId + 'LevelSelect');
+                     skillSettings[skillId] = {
+                         enabled: checkbox.checked,
+                         level: levelSelect ? safeParseInt(skillId + 'LevelSelect', 0) : 0
+                     };
+                 }
+             });
+             return skillSettings;
+        }
+
+        function getSelectedAttacks() {
+            const selectedAttacks = {};
+            const attackCheckboxes = document.querySelectorAll('.attack-checkbox');
+            attackCheckboxes.forEach(checkbox => {
+                if (checkbox.checked) {
+                     const mv = parseFloat(checkbox.dataset.mv);
+                     const hits = parseInt(checkbox.dataset.hits);
+                     const attackName = checkbox.dataset.name;
+
+                      if (isNaN(mv) || isNaN(hits) || hits < 1) {
+                          console.error(`getSelectedAttacks: Invalid MV or Hits for attack "${attackName}"`, {mv, hits});
+                      } else {
+                          selectedAttacks[attackName] = { mv: mv, hits: hits };
+                      }
+                }
+            });
+            return selectedAttacks;
+        }
+
+
+        // --- Skill Effect Calculation ---
+        function getCalculatedSkillEffects(skillSettings) {
+             const effects = {
+                 rawFlat: 0,
+                 rawMultiplier: 1.0,
+                 trueElemFlat: 0,
+                 affinityAdd: 0,
+                 critBoostMultiplier: skillData.critBoost.totalMulti[0], // Default to Lv0 (1.25)
+                 mindsEyeMultiplierHard: skillData.mindsEye.hardMulti[0], // Default to Lv0 (1.0)
+                 critElemMultiplier: skillData.critElem.multi[0], // Default to Lv0 (1.0)
+                 nushiNoTamashiiRawMultiplier: 1.0,
+                 weaknessExploitLevel: 0,
+             };
+
+             const getEffectValue = (level, values, skillName, effectType) => {
+                 if (!Array.isArray(values) || values.length === 0) {
+                     console.error(`getEffectValue: Invalid data for skill "${skillName}", effect "${effectType}".`);
+                     return 0;
+                 }
+                 const effectiveLevel = Math.min(Math.max(0, level), values.length - 1);
+                 const value = values[effectiveLevel];
+                  if (isNaN(value) || !isFinite(value)) {
+                       console.error(`getEffectValue: Invalid value (${value}) for skill "${skillName}", effect "${effectType}", level ${effectiveLevel}.`);
+                       return 0;
+                  }
+                 return value;
+             };
+
+             for (const skillId in skillSettings) {
+                 if (skillSettings.hasOwnProperty(skillId) && skillSettings[skillId].enabled) {
+                     const level = skillSettings[skillId].level;
+                     const data = skillData[skillId];
+
+                     if (!data) {
+                         console.warn(`Skill data not found for ID: ${skillId}`);
+                         continue;
+                     }
+
+                     // Apply skill effects based on skillId and data
+                     if (skillId === 'attack' && data.raw) effects.rawFlat += getEffectValue(level, data.raw, skillId, 'raw');
+                     if (skillId === 'attack' && data.multi) effects.rawMultiplier *= getEffectValue(level, data.multi, skillId, 'multi');
+                     if (skillId === 'criticalEye' && data.affinity) effects.affinityAdd += getEffectValue(level, data.affinity, skillId, 'affinity');
+                     if (skillId === 'peakPerformance' && data.raw) effects.rawFlat += getEffectValue(level, data.raw, skillId, 'raw');
+                     if (skillId === 'inverse' && data.raw) effects.rawFlat += getEffectValue(level, data.raw, skillId, 'raw');
+                     if (skillId === 'agitator' && data.raw) effects.rawFlat += getEffectValue(level, data.raw, skillId, 'raw');
+                     if (skillId === 'agitator' && data.affinity) effects.affinityAdd += getEffectValue(level, data.affinity, skillId, 'affinity');
+                     if (skillId === 'maximumMight' && data.affinity) effects.affinityAdd += getEffectValue(level, data.affinity, skillId, 'affinity');
+                     if (skillId === 'latentPower' && data.affinity) effects.affinityAdd += getEffectValue(level, data.affinity, skillId, 'affinity');
+                     if (skillId === 'chainCrit' && data.raw) effects.rawFlat += getEffectValue(level, data.raw, skillId, 'raw');
+                     if (skillId === 'chainCrit' && data.trueElem) effects.trueElemFlat += getEffectValue(level, data.trueElem, skillId, 'trueElem');
+                     if (skillId === 'offensiveGuard' && data.raw) effects.rawFlat += getEffectValue(level, data.raw, skillId, 'raw');
+                     if (skillId === 'absorption' && data.trueElem) effects.trueElemFlat += getEffectValue(level, data.trueElem, skillId, 'trueElem');
+
+                      // These multipliers overwrite the defaults if the skill is enabled and has the data
+                     if (skillId === 'critBoost' && data.totalMulti) effects.critBoostMultiplier = getEffectValue(level, data.totalMulti, skillId, 'totalMulti');
+                     if (skillId === 'mindsEye' && data.hardMulti) effects.mindsEyeMultiplierHard = getEffectValue(level, data.hardMulti, skillId, 'hardMulti');
+                     if (skillId === 'critElem' && data.multi) effects.critElemMultiplier = getEffectValue(level, data.multi, skillId, 'multi');
+
+
+                      if (skillId === 'weaknessExploit') {
+                           effects.weaknessExploitLevel = level; // Store WEX level
+                      }
+
+                      if (data.rawMultiplier && skillId === 'nushiNoTamashii') {
+                          effects.nushiNoTamashiiRawMultiplier = data.rawMultiplier;
+                      }
+                 }
+             }
+
+             console.log("Calculated Skill Effects:", effects); // Debug log
+
+             return effects;
+        }
+
+        // --- Core Damage Calculations ---
+
+        function calculateTrueRaw(baseRaw, skillEffects) {
+             const trueRaw = (baseRaw * skillEffects.nushiNoTamashiiRawMultiplier + skillEffects.rawFlat) * skillEffects.rawMultiplier;
+             console.log(`True Raw: (${baseRaw} * ${skillEffects.nushiNoTamashiiRawMultiplier} + ${skillEffects.rawFlat}) * ${skillEffects.rawMultiplier} = ${trueRaw.toFixed(2)}`); // Debug log
+             return trueRaw;
+        }
+
+        function calculateEffectiveAffinity(baseAffinity, skillAffinityAdd, wexAffinity) {
+            let totalAff = baseAffinity + skillAffinityAdd + wexAffinity;
+            const effectiveAff = Math.min(Math.max(0, totalAff), 100);
+             console.log(`Effective Affinity: ${baseAffinity} (Base) + ${skillAffinityAdd} (Skill Add) + ${wexAffinity} (WEX) = ${totalAff} => clamped to ${effectiveAff.toFixed(2)}%`); // Debug log
+            return effectiveAff;
+        }
+
+        function calculateTrueElemental(baseDisplayElem, skillTrueElemFlat) {
+            const trueElem = (baseDisplayElem / 10) + skillTrueElemFlat;
+             console.log(`True Elemental: (${baseDisplayElem} / 10) + ${skillTrueElemFlat} = ${trueElem.toFixed(2)}`); // Debug log
+            return trueElem;
+        }
+
+
+        function calculateDamagePerHit(
+            trueRaw, trueElemental, motionValue, sharpnessPhys, sharpnessElem,
+            hitzoneRaw, hitzoneElem, effectiveAffinity, critBoostMultiplier,
+            mindsEyeMultiplierHard, critElemMultiplier
+        ) {
+            console.log(`Calculating damage per hit with -> MV: ${motionValue}, SharpPhys: ${sharpnessPhys.toFixed(2)}, SharpElem: ${sharpnessElem.toFixed(2)}, HZRaw: ${hitzoneRaw}, HZElem: ${hitzoneElem}, EffectiveAff: ${effectiveAffinity.toFixed(2)}%, CritBoost: ${critBoostMultiplier.toFixed(2)}x, MindsEye: ${mindsEyeMultiplierHard.toFixed(2)}x, CritElem: ${critElemMultiplier.toFixed(2)}x`); // Debug log
+
+            // Physical Damage
+            let basePhysDmg = trueRaw * motionValue * sharpnessPhys * (hitzoneRaw / 100);
+            console.log(`Base Physical Damage before Mind's Eye: ${trueRaw.toFixed(2)} * ${motionValue} * ${sharpnessPhys.toFixed(2)} * (${hitzoneRaw} / 100) = ${basePhysDmg.toFixed(2)}`); // Debug log
+
+
+             // Apply Mind's Eye if skill is ON AND hitzone raw is <= threshold
+             if (mindsEyeMultiplierHard > skillData.mindsEye.hardMulti[0] && hitzoneRaw <= MINDS_EYE_THRESHOLD) {
+                 console.log(`Mind's Eye condition met for Raw ${hitzoneRaw} (<= ${MINDS_EYE_THRESHOLD}) and Multi ${mindsEyeMultiplierHard.toFixed(2)} (> ${skillData.mindsEye.hardMulti[0]})`); // Debug log
+                 basePhysDmg *= mindsEyeMultiplierHard;
+                  console.log(`Physical Damage after Mind's Eye: ${basePhysDmg.toFixed(2)}`); // Debug log
+             } else {
+                  console.log(`Mind's Eye condition NOT met for Raw ${hitzoneRaw} (<= ${MINDS_EYE_THRESHOLD}: ${hitzoneRaw <= MINDS_EYE_THRESHOLD}) or Multi ${mindsEyeMultiplierHard.toFixed(2)} (> ${skillData.mindsEye.hardMulti[0]}: ${mindsEyeMultiplierHard > skillData.mindsEye.hardMulti[0]})`); // Debug log
+             }
+
+            const affinityDecimal = Math.max(0, Math.min(100, effectiveAffinity)) / 100;
+            const critExpectationPhys = (1 - affinityDecimal) * 1.0 + affinityDecimal * critBoostMultiplier;
+            const totalPhysDmgPerHit = basePhysDmg * critExpectationPhys;
+             console.log(`Total Physical Damage per hit (Crit Expectation ${critExpectationPhys.toFixed(3)}): ${totalPhysDmgPerHit.toFixed(2)}`); // Debug log
+
+
+            // Elemental Damage
+            const baseElemDmg = trueElemental * sharpnessElem * (hitzoneElem / 100);
+             console.log(`Base Elemental Damage: ${trueElemental.toFixed(2)} * ${sharpnessElem.toFixed(2)} * (${hitzoneElem} / 100) = ${baseElemDmg.toFixed(2)}`); // Debug log
+
+            const critElemExpectation = (1 - affinityDecimal) * 1.0 + affinityDecimal * critElemMultiplier;
+            const totalElemDmgPerHit = baseElemDmg * critElemExpectation;
+             console.log(`Total Elemental Damage per hit (Crit Expectation ${critElemExpectation.toFixed(3)}): ${totalElemDmgPerHit.toFixed(2)}`); // Debug log
+
+
+            const totalDmg = totalPhysDmgPerHit + totalElemDmgPerHit;
+             console.log(`Total Damage per hit: ${totalPhysDmgPerHit.toFixed(2)} + ${totalElemDmgPerHit.toFixed(2)} = ${totalDmg.toFixed(2)}`); // Debug log
+
+
+             if (!isFinite(totalDmg)) {
+                 console.error("calculateDamagePerHit: Calculated damage is not finite.", totalDmg);
+                 return NaN;
+             }
+            return totalDmg;
+        }
+
+
+        // --- Main Calculation Function ---
+        function calculateTotalDamage() {
+            console.log("--- Calculation started ---"); // Start log group
+
+            if (!resultsDivElement) {
+                 console.error("Results div element not found!");
+                 alert("計算結果表示エリアが見つかりません。");
+                 return;
+            }
+
+            const weaponInputs = getWeaponInputs();
+            const selectedMonsterKey = safeGetSelectValue('monsterSelect', 'redaou');
+            const selectedMonster = monsterHitzoneData[selectedMonsterKey];
+
+            if (!selectedMonster) {
+                 console.error("Selected monster data not found:", selectedMonsterKey);
+                 resultsDivElement.innerHTML = '<h3>計算エラー</h3><p>選択されたモンスターのデータが見つかりません。</p>';
+                 return;
+            }
+
+
+            const skillSettings = getSkillSettings();
+            const selectedAttacks = getSelectedAttacks();
+
+            const selectedAttackNames = Object.keys(selectedAttacks);
+            if (selectedAttackNames.length === 0) {
+                 resultsDivElement.innerHTML = `<h3>${selectedMonster.name} に対する計算結果</h3><p>計算対象の攻撃が選択されていません。</p>`;
+                 console.log("No attacks selected.");
+                 console.log("--- Calculation finished ---"); // End log group
+                 return;
+            }
+
+             // Check for NaN/Infinity in primary weapon inputs
+             const primaryWeaponInputs = { ...weaponInputs };
+             if (Object.values(primaryWeaponInputs).some(val => typeof val === 'number' && !isFinite(val))) {
+                  console.error("Primary weapon inputs contain non-finite values.", primaryWeaponInputs);
+                  resultsDivElement.innerHTML = '<h3>計算エラー</h3><p>武器の入力値に無効なものがあります。数値が正しく入力されているか確認してください。</p>';
+                   console.log("--- Calculation finished with error ---"); // End log group
+                   return;
+              }
+
+            const skillEffects = getCalculatedSkillEffects(skillSettings);
+             // Check for NaN/Infinity in skill effects
+             if (Object.values(skillEffects).some(val => typeof val === 'number' && !isFinite(val))) {
+                  console.error("Calculated skill effects contain non-finite values.", skillEffects);
+                   resultsDivElement.innerHTML = '<h3>計算エラー</h3><p>スキル効果の計算に問題が発生しました。</p>';
+                   console.log("--- Calculation finished with error ---"); // End log group
+                   return;
+             }
+
+
+            const trueRaw = calculateTrueRaw(weaponInputs.baseRaw, skillEffects);
+            const trueElemental = calculateTrueElemental(weaponInputs.baseDisplayElem, skillEffects.trueElemFlat);
+
+             if (!isFinite(trueRaw) || !isFinite(trueElemental)) {
+                  console.error("True Raw or True Elemental is not finite.", {trueRaw, trueElemental});
+                   resultsDivElement.innerHTML = '<h3>計算エラー</h3><p>攻撃力・属性値の計算に問題が発生しました。</p>';
+                   console.log("--- Calculation finished with error ---"); // End log group
+                   return;
+             }
+
+
+            // Build the results table HTML
+            const resultsHtml = [];
+            resultsHtml.push(`<h3>${selectedMonster.name} に対する計算結果</h3>`);
+            resultsHtml.push('<p>選択した攻撃連携の合計ダメージ:</p>');
+
+             // Start Table
+            resultsHtml.push('<table>');
+            resultsHtml.push('<thead><tr><th>部位</th><th>物理肉質</th><th>属性肉質</th><th>有効会心率</th><th>合計ダメージ</th></tr></thead>');
+            resultsHtml.push('<tbody>');
+
+            let overallCalculationErrorOccurred = false;
+
+            // Iterate through hitzones of the selected monster
+            for (const hitzoneKey in selectedMonster.hitzones) {
+                if (selectedMonster.hitzones.hasOwnProperty(hitzoneKey)) {
+                    const hitzone = selectedMonster.hitzones[hitzoneKey];
+                    const hitzoneRaw = hitzone.raw;
+                    const hitzoneElem = hitzone.elem[weaponInputs.weaponElement] ?? 0;
+
+                     // Calculate Effective Affinity for this hitzone
+                    let wexAffinity = 0;
+                     // Check if WEX is enabled AND hitzone raw is 45 or above (WEX condition for weak spots >=45)
+                     if (skillSettings.weaknessExploit && skillSettings.weaknessExploit.enabled && hitzoneRaw >= WEX_THRESHOLD) {
+                          wexAffinity = skillData.weaknessExploit.totalWoundedAff[skillEffects.weaknessExploitLevel] ?? 0;
+                     }
+
+                    const effectiveAffinity = calculateEffectiveAffinity(weaponInputs.baseAffinity, skillEffects.affinityAdd, wexAffinity);
+
+                     if (!isFinite(effectiveAffinity)) {
+                          console.error(`Effective Affinity is not finite for hitzone ${hitzone.name}.`, effectiveAffinity);
+                           overallCalculationErrorOccurred = true;
+                           // Add a row with error for this hitzone
+                           resultsHtml.push(`<tr><td>${hitzone.name}</td><td>${hitzoneRaw}</td><td>${hitzoneElem}</td><td>エラー</td><td>計算エラー</td></tr>`);
+                           continue;
+                     }
+
+
+                    let totalSequenceDamageForHitzone = 0;
+                    let hitzoneCalculationError = false;
+
+                    for (const attackName in selectedAttacks) {
+                        if (selectedAttacks.hasOwnProperty(attackName)) {
+                             const attack = selectedAttacks[attackName];
+
+                            const totalDmgPerHit = calculateDamagePerHit(
+                                trueRaw, trueElemental, attack.mv, weaponInputs.sharpnessPhys, weaponInputs.sharpnessElem,
+                                hitzoneRaw, hitzoneElem, effectiveAffinity,
+                                skillEffects.critBoostMultiplier, skillEffects.mindsEyeMultiplierHard, skillEffects.critElemMultiplier
+                            );
+
+                             if (!isFinite(totalDmgPerHit)) {
+                                  console.error(`Damage per hit for ${attackName} on ${hitzone.name} is not finite.`);
+                                  hitzoneCalculationError = true;
+                                  break;
+                             } else {
+                                 const totalDmgForAttack = totalDmgPerHit * attack.hits;
+                                  if (!isFinite(totalDmgForAttack)) {
+                                      console.error(`Total damage for ${attackName} on ${hitzone.name} is not finite.`);
+                                       hitzoneCalculationError = true;
+                                       break;
+                                 } else {
+                                      totalSequenceDamageForHitzone += totalDmgForAttack;
+                                 }
+                             }
+                        }
+                    }
+
+                     // Add a row for this hitzone
+                     if (!hitzoneCalculationError) {
+                         resultsHtml.push(`<tr><td>${hitzone.name}</td><td>${hitzoneRaw}</td><td>${hitzoneElem}</td><td>${effectiveAffinity.toFixed(2)}%</td><td>${totalSequenceDamageForHitzone.toFixed(2)}</td></tr>`);
+                     } else {
+                          // If there was an error calculating for this hitzone
+                          resultsHtml.push(`<tr><td>${hitzone.name}</td><td>${hitzoneRaw}</td><td>${hitzoneElem}</td><td>エラー</td><td>計算エラー</td></tr>`);
+                          overallCalculationErrorOccurred = true;
+                     }
+                }
+            }
+
+            resultsHtml.push('</tbody>'); // Close tbody
+            resultsHtml.push('</table>'); // Close table
+
+
+            resultsHtml.push('<p>--- 詳細 ---</p>');
+            resultsHtml.push(`<p>真の攻撃力: ${trueRaw.toFixed(2)}</p>`);
+            resultsHtml.push(`<p>真の属性値 (${weaponElementNames[weaponInputs.weaponElement] || weaponInputs.weaponElement}): ${trueElemental.toFixed(2)}</p>`);
+            resultsHtml.push(`<p>物理会心倍率 (超会心込み): ${skillEffects.critBoostMultiplier.toFixed(2)}x</p>`);
+            resultsHtml.push(`<p>属性会心倍率 (会心撃【属性】込み): ${skillEffects.critElemMultiplier.toFixed(2)}x</p>`);
+            resultsHtml.push(`<p>心眼 硬い部位物理倍率: ${skillEffects.mindsEyeMultiplierHard.toFixed(2)}x (物理肉質 ${MINDS_EYE_THRESHOLD}以下で適用)</p>`);
+            resultsHtml.push(`<p>物理斬れ味補正 (${getSharpnessColorName(weaponInputs.sharpnessColor)}): ${weaponInputs.sharpnessPhys.toFixed(2)}x</p>`);
+            resultsHtml.push(`<p>属性斬れ味補正 (${getSharpnessColorName(weaponInputs.sharpnessColor)}): ${weaponInputs.sharpnessElem.toFixed(2)}x</p>`); // Corrected variable name
+
+            if (overallCalculationErrorOccurred) {
+                 resultsHtml.unshift('<h3>計算エラー</h3><p>一部の部位のダメージ計算中に問題が発生しました。</p>');
+                 console.error("Overall calculation finished with errors.");
+            } else {
+                 console.log("--- Calculation finished successfully ---"); // End log group
+            }
+
+            resultsDivElement.innerHTML = resultsHtml.join('');
+        }
+
+         // Helper to get sharpness color name for display
+         const getSharpnessColorName = (key) => {
+             switch (key) {
+                 case 'yellow': return '黄';
+                 case 'green': return '緑';
+                 case 'blue': return '青';
+                 case 'white': return '白';
+                 default: return '不明';
+             }
+         };
+
+
+        // --- Save/Load/Clear Functions ---
+
+        function saveCurrentSettings() {
+            const settingNameInput = document.getElementById('settingNameInput');
+            if (!settingNameInput) { console.error("settingNameInput not found."); return; }
+            const settingName = settingNameInput.value.trim();
+
+            if (!settingName) {
+                alert('設定名を入力してください。');
+                return;
+            }
+
+            const settingsToSave = {
+                weapon: getWeaponInputs(),
+                skills: getSkillSettings(),
+                attacks: {},
+                monster: safeGetSelectValue('monsterSelect', 'redaou')
+            };
+
+            const attackCheckboxes = document.querySelectorAll('.attack-checkbox');
+            attackCheckboxes.forEach(checkbox => {
+                settingsToSave.attacks[checkbox.dataset.name] = checkbox.checked;
+            });
+
+            allSettings[settingName] = settingsToSave;
+            saveAllSettingsToLocalStorage();
+
+            alert(`設定 "${settingName}" を保存しました！`);
+            settingNameInput.value = '';
+            updateSettingListUI();
+            closeSettingsModal();
+        }
+
+        function loadAllSettingsFromLocalStorage() {
+            try {
+                const savedSettings = localStorage.getItem(localStorageKey);
+                allSettings = savedSettings ? JSON.parse(savedSettings) : {};
+                 if (typeof allSettings !== 'object' || allSettings === null) {
+                     console.warn("Loaded settings are not an object, resetting.");
+                     allSettings = {};
+                 }
+            } catch (e) {
+                console.error('Error loading settings from localStorage:', e);
+                allSettings = {};
+                alert('保存された設定の読み込みに失敗しました。');
+            }
+            updateSettingListUI();
+        }
+
+        function saveAllSettingsToLocalStorage() {
+            try {
+                localStorage.setItem(localStorageKey, JSON.stringify(allSettings));
+            } catch (e) {
+                console.error('Error saving settings to localStorage:', e);
+                alert('全設定の保存に失敗しました。ブラウザのストレージ容量を確認してください。');
+            }
+        }
+
+        function updateSettingListUI() {
+            const selectElement = document.getElementById('savedSettingsSelect');
+            if (!selectElement) { console.error("savedSettingsSelect not found in updateSettingListUI."); return; }
+            selectElement.innerHTML = '<option value="">--選択してください--</option>';
+
+            const sortedSettingNames = Object.keys(allSettings).sort();
+
+            sortedSettingNames.forEach(settingName => {
+                const option = document.createElement('option');
+                option.value = settingName;
+                option.textContent = settingName;
+                selectElement.appendChild(option);
+            });
+        }
+
+        function loadSelectedSetting() {
+            const selectElement = document.getElementById('savedSettingsSelect');
+             if (!selectElement) { console.error("savedSettingsSelect not found in loadSelectedSetting."); return; }
+            const settingName = selectElement.value;
+
+            if (!settingName) {
+                alert('読み込む設定を選択してください。');
+                return;
+            }
+
+            const settingsToLoad = allSettings[settingName];
+
+            if (settingsToLoad) {
+                 // Load weapon inputs
+                document.getElementById('baseRaw').value = settingsToLoad.weapon?.baseRaw ?? document.getElementById('baseRaw')?.value ?? 0;
+                document.getElementById('baseAffinity').value = settingsToLoad.weapon?.baseAffinity ?? document.getElementById('baseAffinity')?.value ?? 0;
+                document.getElementById('baseDisplayElem').value = settingsToLoad.weapon?.baseDisplayElem ?? document.getElementById('baseDisplayElem')?.value ?? 0;
+
+                 // Load weapon element
+                 const weaponElementEl = document.getElementById('weaponElement');
+                 if (weaponElementEl) {
+                     const savedElement = settingsToLoad.weapon?.weaponElement;
+                     weaponElementEl.value = savedElement ?? weaponElementEl.value;
+                      if (!weaponElementNames.hasOwnProperty(weaponElementEl.value)) {
+                           weaponElementEl.value = 'ice'; // Default if loaded value is invalid
+                      }
+                 }
+
+                // Load sharpness color
+                 const sharpnessColorEl = document.getElementById('sharpnessColor');
+                 if (sharpnessColorEl) {
+                     const savedSharpnessColor = settingsToLoad.weapon?.sharpnessColor ?? settingsToLoad.sharpnessColor; // Added fallback for older saves
+                     sharpnessColorEl.value = savedSharpnessColor ?? sharpnessColorEl.value;
+                     if (!sharpnessData.hasOwnProperty(sharpnessColorEl.value)) {
+                         sharpnessColorEl.value = 'white'; // Default if loaded value is invalid
+                     }
+                 }
+
+                // Load selected monster
+                 const monsterSelectEl = document.getElementById('monsterSelect');
+                 if (monsterSelectEl) {
+                     const savedMonster = settingsToLoad.monster;
+                     monsterSelectEl.value = savedMonster ?? monsterSelectEl.value;
+                     if (!monsterHitzoneData.hasOwnProperty(monsterSelectEl.value)) {
+                          monsterSelectEl.value = 'redaou'; // Default if loaded value is invalid
+                     }
+                 }
+
+
+                // Load skill settings
+                const skillIds = Object.keys(skillData);
+                skillIds.forEach(skillId => {
+                     const toggleElement = document.getElementById(skillId + 'Toggle');
+                     const levelSelectElement = document.getElementById(skillId + 'LevelSelect');
+
+                     if (toggleElement) {
+                          const savedSkill = settingsToLoad.skills?.[skillId];
+                         toggleElement.checked = savedSkill?.enabled ?? false;
+                         toggleElement.dispatchEvent(new Event('change'));
+                     }
+                     if (levelSelectElement) {
+                          const savedSkill = settingsToLoad.skills?.[skillId];
+                          const savedLevel = savedSkill?.level ?? savedSkill?.level; // Added fallback
+                         levelSelectElement.value = savedLevel ?? levelSelectElement.value ?? levelSelectElement.options?.[0]?.value ?? 0;
+                     }
+                });
+
+                // Load attack checkbox states
+                const attackCheckboxes = document.querySelectorAll('.attack-checkbox');
+                attackCheckboxes.forEach(checkbox => {
+                    const attackName = checkbox.dataset.name;
+                    checkbox.checked = settingsToLoad.attacks?.[attackName] ?? false;
+                });
+
+                alert(`設定 "${settingName}" を読み込みました！`);
+                calculateTotalDamage();
+                closeSettingsModal();
+            } else {
+                alert('選択された設定が見つかりません。');
+            }
+        }
+
+        function deleteSelectedSetting() {
+            const selectElement = document.getElementById('savedSettingsSelect');
+             if (!selectElement) { console.error("savedSettingsSelect not found in deleteSelectedSetting."); alert('エラーが発生しました。ページを再読み込みしてください。'); return; }
+            const settingName = selectElement.value;
+
+            if (!settingName) {
+                alert('削除する設定を選択してください。');
+                return;
+            }
+
+            if (confirm(`設定 "${settingName}" を削除しますか？`)) {
+                if (allSettings.hasOwnProperty(settingName)) {
+                    delete allSettings[settingName];
+                    saveAllSettingsToLocalStorage();
+                    alert(`設定 "${settingName}" を削除しました。`);
+                    updateSettingListUI();
+                } else {
+                    alert('選択された設定が見つかりません。');
+                }
+            }
+        }
+
+        function clearAllSettings() {
+             if (confirm('全ての保存された設定をクリアしますか？この操作は元に戻せません。')) {
+                try {
+                    localStorage.removeItem(localStorageKey);
+                    allSettings = {};
+                    alert('全ての保存設定をクリアしました。');
+                    updateSettingListUI();
+                } catch (e) {
+                     console.error('Error clearing settings:', e);
+                     alert('設定のクリアに失敗しました。');
+                }
+             }
+        }
+
+         // --- Skill Toggle and Level Select Linkage ---
+         function setupSkillControls() {
+             const skillItems = document.querySelectorAll('.skill-item');
+             skillItems.forEach(item => {
+                 const checkbox = item.querySelector('input[type="checkbox"][data-skill-id]');
+                 const select = item.querySelector('select[data-skill-id]');
+
+                 if (checkbox && select) {
+                     const updateSelectState = () => {
+                         select.disabled = !checkbox.checked;
+                     };
+                     updateSelectState();
+                     checkbox.addEventListener('change', updateSelectState);
+                 }
+             });
+         }
+
+        // --- Modal Control ---
+        const settingsModalOverlay = document.getElementById('settingsModalOverlay');
+        const settingsModalDialog = document.getElementById('settingsModalDialog');
+
+        function openSettingsModal() {
+             if (!settingsModalOverlay || !settingsModalDialog) { console.error("Modal elements not found."); return; }
+             updateSettingListUI();
+             settingsModalOverlay.classList.add('visible');
+        }
+
+        function closeSettingsModal() {
+             if (settingsModalOverlay) { settingsModalOverlay.classList.remove('visible'); }
+        }
+
+         // Close modal when clicking outside the dialog
+         if (settingsModalOverlay) {
+             settingsModalOverlay.addEventListener('click', closeSettingsModal);
+         }
+
+        // Prevent closing modal when clicking inside the dialog
+         if (settingsModalDialog) {
+             settingsModalDialog.addEventListener('click', function(event) {
+                 event.stopPropagation();
+             });
+         }
+
+
+        // --- Initialize on page load ---
+        window.onload = function() {
+             resultsDivElement = document.getElementById('results'); // Get results div once
+             setTimeout(() => {
+                 setupSkillControls();
+                 loadAllSettingsFromLocalStorage();
+             }, 200);
+        };
+
+    </script>
+
+</body>
+</html>
